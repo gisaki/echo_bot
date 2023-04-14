@@ -13,7 +13,8 @@
             "cacheVariables": {
                 "NCS_TOOLCHAIN_VERSION": "NONE",
                 "BOARD": "nrf5340dk_nrf5340_cpuapp",
-                "CONF_FILE": "${sourceDir}/prj.conf"
+                "CONF_FILE": "${sourceDir}/prj.conf",
+                "DTC_OVERLAY_FILE": "${sourceDir}/nrf5340dk_nrf5340_cpuapp.overlay"
             }
         }
     ]
