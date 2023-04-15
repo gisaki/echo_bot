@@ -117,6 +117,10 @@ void main(void)
 
 	// ----------------
     const struct device *dev2 = device_get_binding(DT_LABEL(DT_NODELABEL(my_device)));
+	if (!device_is_ready(dev2)) {
+		printk("DEV2 device not found!");
+		return;
+	}
     my_uart_set_callback(dev2, peripheral_callback, &tracker);
 	// ----------------
 
