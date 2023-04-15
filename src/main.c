@@ -116,7 +116,7 @@ void main(void)
 
 
 	// ----------------
-    const struct device *dev2 = device_get_binding(DT_LABEL(DT_NODELABEL(my_device)));
+    const struct device *dev2 = device_get_binding(DT_PROP(DT_NODELABEL(my_device),label));
 	if (!device_is_ready(dev2)) {
 		printk("DEV2 device not found!");
 		return;
