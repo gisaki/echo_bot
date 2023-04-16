@@ -2,7 +2,7 @@ description: |
   UART peripheral example. Transmits data over uart on button press
   and accumulates recieved data as strings.
 
-compatible: "riphiphip,my_uart_peripheral"
+compatible: "mycompany,my_uart_peripheral"
 
 include: uart-device.yaml
 

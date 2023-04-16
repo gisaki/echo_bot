@@ -8,8 +8,8 @@
 
 #include "api.h"
 
-// Compatible with "riphiphip,my_uart_peripheral"
-#define DT_DRV_COMPAT riphiphip_my_uart_peripheral
+// Compatible with "mycompany,my_uart_peripheral"
+#define DT_DRV_COMPAT mycompany_my_uart_peripheral
 #define MY_UART_PERIPHERAL_INIT_PRIORITY 41
 
 #include <zephyr/logging/log.h>
