@@ -6,6 +6,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(uart_echo_bot)
 
 target_sources(app PRIVATE 
-src/main.c
+src/main_echo_bot.c
+src/main_my_uart_peripheral.c
 )
 add_subdirectory(drivers)
