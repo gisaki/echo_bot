@@ -1,6 +1,8 @@
 https://docs.zephyrproject.org/latest/build/dts/bindings-intro.html
 
-Where bindings are located��
+上記より引用↓
+====
+Where bindings are located¶
 Binding file names usually match their compatible: lines. For example, the above example binding would be named foo-company,bar-device.yaml by convention.
 
 The build system looks for bindings in dts/bindings subdirectories of the following places:
@@ -24,3 +26,6 @@ Warning
 The binding files must be located somewhere inside the dts/bindings subdirectory of the above places.
 
 For example, if my-app is your application directory, then you must place application-specific bindings inside my-app/dts/bindings. So my-app/dts/bindings/serial/my-company,my-serial-port.yaml would be found, but my-app/my-company,my-serial-port.yaml would be ignored.
+====
+
+→ なので dts/bindings の下に foo-company,bar-device.yaml の名前で格納した
