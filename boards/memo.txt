@@ -1,0 +1,38 @@
+https://docs.zephyrproject.org/latest/build/dts/howtos.html
+
+上記より引用↓
+====
+Set devicetree overlays
+
+Devicetree overlays are explained in Introduction to devicetree. The CMake variable DTC_OVERLAY_FILE contains a space- or semicolon-separated list of overlay files to use. If DTC_OVERLAY_FILE specifies multiple files, they are included in that order by the C preprocessor. A file in a Zephyr module can be referred to by escaping the Zephyr module dir variable like \${ZEPHYR_<module>_MODULE_DIR}/<path-to>/dts.overlay when setting the DTC_OVERLAY_FILE variable.
+
+You can set DTC_OVERLAY_FILE to contain exactly the files you want to use. Here is an example using west build.
+
+If you don’t set DTC_OVERLAY_FILE, the build system will follow these steps, looking for files in your application configuration directory to use as devicetree overlays:
+
+If the file boards/<BOARD>.overlay exists, it will be used.
+
+If the current board has multiple revisions and boards/<BOARD>_<revision>.overlay exists, it will be used. This file will be used in addition to boards/<BOARD>.overlay if both exist.
+
+If one or more files have been found in the previous steps, the build system stops looking and just uses those files.
+
+Otherwise, if <BOARD>.overlay exists, it will be used, and the build system will stop looking for more files.
+
+Otherwise, if app.overlay exists, it will be used.
+
+All configuration files will be taken from the application’s configuration directory except for files with an absolute path that are given with the DTC_OVERLAY_FILE argument.
+
+See Application Configuration Directory on how the application configuration directory is defined.
+
+Using Shields will also add devicetree overlay files.
+
+The DTC_OVERLAY_FILE value is stored in the CMake cache and used in successive builds.
+
+The build system prints all the devicetree overlays it finds in the configuration phase, like this:
+
+-- Found devicetree overlay: .../some/file.overlay
+====
+
+→ とあるので
+If the file boards/<BOARD>.overlay exists, it will be used.
+に従って boards の下に overlay ファイルを格納したいが、Visual Studio Code の場合に認識されないようなので直下に nrf5340dk_nrf5340_cpuapp.overlay として格納している。
