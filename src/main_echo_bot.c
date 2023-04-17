@@ -69,8 +69,12 @@ void print_uart(char *buf)
 }
 
 extern void main_my_uart_peripheral(void);
+extern void main_cdc_acm_composite(void);
 void main(void)
 {
+	main_my_uart_peripheral();
+	main_cdc_acm_composite();
+
 	char tx_buf[MSG_SIZE];
 
 	if (!device_is_ready(uart_dev)) {
@@ -84,8 +88,6 @@ void main(void)
 
 	print_uart("Hello! I'm your echo bot.\r\n");
 	print_uart("Tell me something and press enter:\r\n");
-
-	main_my_uart_peripheral();
 
 	/* indefinitely wait for input from the user */
 	while (k_msgq_get(&uart_msgq, &tx_buf, K_FOREVER) == 0) {

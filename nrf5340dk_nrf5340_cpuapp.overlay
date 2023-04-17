@@ -38,7 +38,7 @@
 };
 
 //
-// Added for additional devices
+// Added for UART additional devices
 //
 &pinctrl {
 	uart2_default: uart2_default {
@@ -102,5 +102,18 @@
 		label = "my_uart_peripheral_b0";
 		button-gpios = <&gpio0 23 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; // Button 1 on dk
 		initial-string = "Hello, World!";
+	};
+};
+
+//
+// USB Device
+//
+&zephyr_udc0 {
+	cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+
+	cdc_acm_uart1 {
+		compatible = "zephyr,cdc-acm-uart";
 	};
 };
