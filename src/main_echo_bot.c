@@ -70,10 +70,12 @@ void print_uart(char *buf)
 
 extern void main_my_uart_peripheral(void);
 extern void main_cdc_acm_composite(void);
+extern void main_mcp9808(void);
 void main(void)
 {
 	main_my_uart_peripheral();
 	main_cdc_acm_composite();
+	main_mcp9808();
 
 	char tx_buf[MSG_SIZE];
 

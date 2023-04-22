@@ -9,5 +9,6 @@ target_sources(app PRIVATE
 src/main_echo_bot.c
 src/main_my_uart_peripheral.c
 src/main_cdc_acm_composite.c
+src/main_mcp9808.c
 )
 add_subdirectory(drivers)
