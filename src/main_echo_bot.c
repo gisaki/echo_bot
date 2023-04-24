@@ -68,15 +68,12 @@ void print_uart(char *buf)
 	}
 }
 
-extern void main_my_uart_peripheral(void);
-extern void main_cdc_acm_composite(void);
-extern void main_mcp9808(void);
-void main(void)
+#define STACKSIZE             (1024)
+#define PRIORITY             (7)
+K_THREAD_STACK_DEFINE(thread_echo_bot_stack_area, STACKSIZE);
+static struct k_thread thread_echo_bot_data;
+void thread_echo_bot(void *dummy1, void *dummy2, void *dummy3)
 {
-	main_my_uart_peripheral();
-	main_cdc_acm_composite();
-	main_mcp9808();
-
 	char tx_buf[MSG_SIZE];
 
 	if (!device_is_ready(uart_dev)) {
@@ -97,4 +94,13 @@ void main(void)
 		print_uart(tx_buf);
 		print_uart("\r\n");
 	}
+}
+
+void main_echo_bot(void)
+{
+    k_thread_create(&thread_echo_bot_data, thread_echo_bot_stack_area,
+            K_THREAD_STACK_SIZEOF(thread_echo_bot_stack_area),
+            thread_echo_bot, NULL, NULL, NULL,
+            PRIORITY, 0, K_FOREVER);
+	k_thread_start(&thread_echo_bot_data);
 }
