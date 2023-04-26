@@ -105,10 +105,10 @@ static void trigger_handler(const struct device *dev,
 }
 #endif
 
-#define MCP9808 DT_INST(0, microchip_mcp9808)
+#define MCP9808 DT_INST(0, mycompany_my_i2c_mcp9808)
 #if DT_NODE_HAS_STATUS(MCP9808, okay)
 #else
-#error Your devicetree has no enabled nodes with compatible "microchip,mcp9808"
+#error Your devicetree has no enabled nodes with compatible "mycompany,my_i2c_mcp9808"
 #define MCP9808_LABEL "<none>"
 #endif
 

@@ -143,8 +143,8 @@
 //
 &i2c1 {
     status = "okay";
-	my_mcp9808: mcp9808@18 {
-		compatible = "microchip,mcp9808";
+	my_mcp9808: my_i2c_mcp9808@18 {
+		compatible = "mycompany,my_i2c_mcp9808";
         status = "okay";
 		reg = <0x18>;
 		resolution = <3>;
