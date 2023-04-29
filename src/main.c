@@ -16,13 +16,15 @@ static void work_handler(struct k_work *work)
 extern void main_echo_bot(void);
 extern void main_my_uart_peripheral(void);
 extern void main_cdc_acm_composite(void);
+extern void main_shell_module(void);
 extern void main_mcp9808(void);
 
 void main(void)
 {
-	main_echo_bot();
+	// main_echo_bot();
 	main_my_uart_peripheral();
-	main_cdc_acm_composite();
+	// main_cdc_acm_composite();
+	main_shell_module();
 	main_mcp9808();
 
 	k_work_queue_init(&my_work_q);
