@@ -100,8 +100,7 @@
 		compatible = "mycompany,my_uart_peripheral_b";
 		status="okay";
 		label = "my_uart_peripheral_b0";
-		button-gpios = <&gpio0 23 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; // Button 1 on dk
-		initial-string = "Hello, World!";
+		ctrl-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>; // gpio output
 	};
 };
 
