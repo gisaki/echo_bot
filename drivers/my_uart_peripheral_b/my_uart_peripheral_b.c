@@ -2,6 +2,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/sys/ring_buffer.h>
 #include <string.h>
 
 #include <errno.h>
@@ -23,6 +24,9 @@ struct my_uart_data
     uint8_t rx_buf[CONFIG_MY_UART_PERIPHERAL_B_RX_BUF_SIZE]; // Buffer to hold received data.
     size_t rx_data_len;                                      // Length of currently recieved data.
     my_uart_peripheral_b_callback_t callback;                // Callback function to be called when a string is received.
+
+    struct ring_buf tx_rb;
+    uint32_t tx_rb_buffer[CONFIG_MY_UART_PERIPHERAL_B_TX_BUFFERING_BUF_WORDS];
 };
 
 /**
@@ -34,6 +38,36 @@ struct my_uart_conf
     const struct device *uart_dev;       // UART device.
     const struct gpio_dt_spec gpio_spec; // GPIO spec for pin used to start transmitting.
 };
+
+/**
+ * @brief Send data by the UART peripheral.
+ * 
+ * @param dev UART peripheral device.
+ * @param data data to be transmitted.
+ * @param length Length of data.
+ */
+static void user_send_data(const struct device *dev, const char *data, size_t length)
+{
+    struct my_uart_conf *conf = (struct my_uart_conf *)dev->config;
+    {
+    	uint16_t type = 0; // dummy
+    	uint8_t value = length; // tell length for ring_buf_item_get
+    	uint32_t buf[CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS];
+		int ret;
+
+        // do somrthing
+        memcpy(buf, data, length);
+    	
+		ret = ring_buf_item_put(&(conf->data->tx_rb), type, value, buf, CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS);
+		if (ret == -EMSGSIZE) {
+		    /* not enough room for the data item */
+            LOG_DBG("My UART peripheral b called user_send_data, not enough buffer space");
+			return;
+		}
+    }
+    LOG_DBG("My UART peripheral b called user_send_data");
+	uart_irq_tx_enable(conf->uart_dev);
+}
 
 /**
  * @brief Set callback function to be called when a string is received.
@@ -48,6 +82,7 @@ static void user_set_callback(const struct device *dev, my_uart_peripheral_b_cal
 }
 
 const static struct my_uart_peripheral_b_api api_b = {
+    .send_data = user_send_data,
     .set_callback = user_set_callback,
 };
 
@@ -59,15 +94,17 @@ const static struct my_uart_peripheral_b_api api_b = {
  */
 static void uart_int_handler(const struct device *uart_dev, void *user_data)
 {
-    uart_irq_update(uart_dev);
     const struct device *dev = (const struct device *)user_data; // Uart peripheral device.
-    struct my_uart_data *data = dev->data;
-    if (uart_irq_rx_ready(uart_dev))
-    {
-        my_uart_peripheral_b_callback_t callback = data->callback;
-        char c;
-        while (!uart_poll_in(uart_dev, &c))
+    struct my_uart_conf *conf = (struct my_uart_conf *)dev->config;
+    struct my_uart_data *data = conf->data;
+
+	while (uart_irq_update(uart_dev) && uart_irq_is_pending(uart_dev)) {
+
+		while (uart_irq_rx_ready(uart_dev))
         {
+	        char c;
+		    my_uart_peripheral_b_callback_t callback = data->callback;
+			uart_fifo_read(uart_dev, &c, 1);
             data->rx_buf[data->rx_data_len] = c;
             data->rx_data_len++;
             size_t rx_buf_capacity = CONFIG_MY_UART_PERIPHERAL_B_RX_BUF_SIZE - data->rx_data_len;
@@ -86,8 +123,32 @@ static void uart_int_handler(const struct device *uart_dev, void *user_data)
                 data->rx_data_len = 0;
                 memset(data->rx_buf, 0, sizeof(data->rx_buf));
             }
-        }
-    }
+        } // while
+
+		if (uart_irq_tx_ready(uart_dev)) {
+			uint32_t my_data[CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS];
+			uint16_t my_type;
+			uint8_t  my_value; // told length by ring_buf_item_put
+			uint8_t  my_size;
+			int ret;
+			while (1) {
+				my_size = CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS;
+				ret = ring_buf_item_get(&(data->tx_rb), &my_type, &my_value, my_data, &my_size);
+				if (ret == -EMSGSIZE) {
+				    printk("Buffer is too small, need %d uint32_t\n", my_size);
+					break;
+				} else if (ret == -EAGAIN) {
+				    printk("Ring buffer is empty\n");
+					break;
+				} else {
+				    printk("Got item of type %u value &u of size %u dwords\n",
+				           my_type, my_value, my_size);
+					uart_fifo_fill(uart_dev, my_data, my_value); // my_value shows data length in the item
+				}
+			} // while
+            uart_irq_tx_disable(uart_dev);
+		}
+	} // while
 }
 
 /**
@@ -149,6 +210,7 @@ static int init_my_uart_peripheral_b(const struct device *dev)
         __ASSERT(false, "Failed to initialize GPIO device.");
         return -ENODEV;
     }
+    ring_buf_item_init(&(conf->data->tx_rb), CONFIG_MY_UART_PERIPHERAL_B_TX_BUFFERING_BUF_WORDS, conf->data->tx_rb_buffer);
     LOG_DBG("My UART peripheral b initialized");
     return 0;
 }

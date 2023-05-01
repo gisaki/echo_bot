@@ -10,6 +10,20 @@ config MY_UART_PERIPHERAL_B_RX_BUF_SIZE
     help
         Size of uart rx buffer. Will be allocated for each device.
 
+config MY_UART_PERIPHERAL_B_TX_BUF_WORDS
+    int "tx buffer size (words)"
+    default 16
+    range 0 511
+    help
+        Size of uart tx buffer (in 32-bit words). Will be allocated for each device.
+
+config MY_UART_PERIPHERAL_B_TX_BUFFERING_BUF_WORDS
+    int "tx buffering buffer size (words)"
+    default 128
+    range 0 511
+    help
+        Size of uart tx buffering buffer (in 32-bit words). Will be allocated for each device.
+
 module = MY_UART_PERIPHERAL_B
 module-str = My uart peripheral-b
 source "subsys/logging/Kconfig.template.log_config"
