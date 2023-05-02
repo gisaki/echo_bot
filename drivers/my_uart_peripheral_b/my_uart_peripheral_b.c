@@ -39,6 +39,13 @@ struct my_uart_conf
     const struct gpio_dt_spec gpio_spec; // GPIO spec for pin used to start transmitting.
 };
 
+size_t build_user_send_data(uint8_t *buf, size_t buf_size, const char *data, size_t length) {
+    // do something
+    memcpy(buf+0, "SEND:", 5);
+    memcpy(buf+5, data, length);
+    return length + 5;
+}
+
 /**
  * @brief Send data by the UART peripheral.
  * 
@@ -51,14 +58,17 @@ static void user_send_data(const struct device *dev, const char *data, size_t le
     struct my_uart_conf *conf = (struct my_uart_conf *)dev->config;
     {
     	uint16_t type = 0; // dummy
-    	uint8_t value = length; // tell length for ring_buf_item_get
+    	uint8_t value;
     	uint32_t buf[CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS];
+        size_t buf_size = CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS * sizeof(uint32_t);
 		int ret;
 
         // do somrthing
-        memcpy(buf, data, length);
-    	
-		ret = ring_buf_item_put(&(conf->data->tx_rb), type, value, buf, CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS);
+        size_t size = build_user_send_data((uint8_t *)buf, buf_size, data, length);
+        uint8_t size32 = (size / sizeof(uint32_t)) + 1;
+        value = size; // tell length for ring_buf_item_get
+
+		ret = ring_buf_item_put(&(conf->data->tx_rb), type, value, buf, size32);
 		if (ret == -EMSGSIZE) {
 		    /* not enough room for the data item */
             LOG_DBG("My UART peripheral b called user_send_data, not enough buffer space");
@@ -131,22 +141,19 @@ static void uart_int_handler(const struct device *uart_dev, void *user_data)
 			uint8_t  my_value; // told length by ring_buf_item_put
 			uint8_t  my_size;
 			int ret;
-			while (1) {
-				my_size = CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS;
-				ret = ring_buf_item_get(&(data->tx_rb), &my_type, &my_value, my_data, &my_size);
-				if (ret == -EMSGSIZE) {
-				    printk("Buffer is too small, need %d uint32_t\n", my_size);
-					break;
-				} else if (ret == -EAGAIN) {
-				    printk("Ring buffer is empty\n");
-					break;
-				} else {
-				    printk("Got item of type %u value &u of size %u dwords\n",
-				           my_type, my_value, my_size);
-					uart_fifo_fill(uart_dev, my_data, my_value); // my_value shows data length in the item
-				}
-			} // while
-            uart_irq_tx_disable(uart_dev);
+            my_size = CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS;
+            ret = ring_buf_item_get(&(data->tx_rb), &my_type, &my_value, my_data, &my_size);
+            if (ret == -EMSGSIZE) {
+                printk("Buffer is too small, need %d uint32_t\n", my_size);
+                uart_irq_tx_disable(uart_dev);
+            } else if (ret == -EAGAIN) {
+                printk("Ring buffer is empty\n");
+                uart_irq_tx_disable(uart_dev);
+            } else {
+                printk("Got item of type %u value %u of size %u dwords\n",
+                        my_type, my_value, my_size);
+                uart_fifo_fill(uart_dev, (uint8_t *)my_data, my_value); // my_value shows data length in the item
+            }
 		}
 	} // while
 }
