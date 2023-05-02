@@ -105,7 +105,7 @@
 };
 
 //
-// USB Device
+// USB Device for cdc_acm_composite
 //
 //&zephyr_udc0 {
 //	cdc_acm_uart0 {
@@ -126,9 +126,17 @@
 		zephyr,console = &cdc_acm_uart0;
 	};
 };
-
 &zephyr_udc0 {
 	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
+
+//
+// USB Device for cdc_acm
+//
+&zephyr_udc0 {
+	cdc_acm_uart1: cdc_acm_uart1 {
 		compatible = "zephyr,cdc-acm-uart";
 	};
 };

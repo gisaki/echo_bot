@@ -17,6 +17,7 @@ extern void main_echo_bot(void);
 extern void main_my_uart_peripheral(void);
 extern void main_my_uart_peripheral_b(void);
 extern void main_cdc_acm_composite(void);
+extern void main_cdc_acm(void);
 extern void main_shell_module(void);
 extern void main_mcp9808(void);
 
@@ -24,6 +25,7 @@ void main(void)
 {
 	// main_echo_bot();
 	// main_cdc_acm_composite();
+	main_cdc_acm();
 	main_shell_module();
 	main_my_uart_peripheral();
 	main_my_uart_peripheral_b();
