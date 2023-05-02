@@ -21,14 +21,14 @@
 
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(cdc_acm, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(cdc_acm, LOG_LEVEL_DBG);
 
 static const struct device *const dev = DEVICE_DT_GET(DT_NODELABEL(cdc_acm_uart1));
 
-#define RING_BUF_SIZE	(128)
+#define RING_BUF_SIZE	(256)
 struct send_buf {
     struct ring_buf rb;
-    uint32_t buffer[RING_BUF_SIZE];
+    uint8_t buffer[RING_BUF_SIZE];
 };
 static struct send_buf sb;
 
@@ -37,7 +37,7 @@ void send_cdc_acm(const char *data, size_t length)
 	size_t wrote;
 	wrote = ring_buf_put(&(sb.rb), data, length);
 	if (wrote < length) {
-		LOG_ERR("Drop %zu bytes", length - wrote);
+		LOG_ERR("Drop %zu bytes of %zu bytes", length - wrote, length);
 	}
 	if (wrote) {
 		uart_irq_tx_enable(dev);
@@ -63,7 +63,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 				uart_irq_tx_disable(dev);
 			} else {
 				wrote = uart_fifo_fill(dev, buf, len);
-				LOG_DBG("dev %p wrote len %zu", dev, wrote);
+				LOG_DBG("dev %p wrote len %zu (get len %zu))", dev, wrote, len);
 			}
 		}
 	} // while
