@@ -66,7 +66,7 @@ static void user_send_data(const struct device *dev, const char *data, size_t le
         // do somrthing
         size_t size = build_user_send_data((uint8_t *)buf, buf_size, data, length);
         uint8_t size32 = (size / sizeof(uint32_t)) + 1;
-        value = size; // tell length for ring_buf_item_get
+        value = size32 * sizeof(uint32_t) - size; // A variable that indicates how much less than the total size managed by the ring buffer of item mode // tell length for ring_buf_item_get
 
 		ret = ring_buf_item_put(&(conf->data->tx_rb), type, value, buf, size32);
 		if (ret == -EMSGSIZE) {
@@ -152,7 +152,9 @@ static void uart_int_handler(const struct device *uart_dev, void *user_data)
             } else {
                 printk("Got item of type %u value %u of size %u dwords\n",
                         my_type, my_value, my_size);
-                uart_fifo_fill(uart_dev, (uint8_t *)my_data, my_value); // my_value shows data length in the item
+                // my_size: A variable that indicates how much less than the total size managed by the ring buffer of item mode
+                size_t size = my_size * sizeof(uint32_t) - my_value; // size indicates data length in the item
+                uart_fifo_fill(uart_dev, (uint8_t *)my_data, size);
             }
 		}
 	} // while
