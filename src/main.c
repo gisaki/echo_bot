@@ -20,6 +20,7 @@ extern void main_cdc_acm_composite(void);
 extern void main_cdc_acm(void);
 extern void main_shell_module(void);
 extern void main_mcp9808(void);
+extern void main_app(void);
 
 void main(void)
 {
@@ -30,6 +31,7 @@ void main(void)
 	main_my_uart_peripheral();
 	main_my_uart_peripheral_b();
 	main_mcp9808();
+	main_app();
 
 	k_work_queue_init(&my_work_q);
 	k_work_queue_start(&my_work_q, my_stack_area,
