@@ -27,6 +27,10 @@ struct my_uart_data
 
     struct ring_buf tx_rb;
     uint32_t tx_rb_buffer[CONFIG_MY_UART_PERIPHERAL_B_TX_BUFFERING_BUF_WORDS];
+
+    // A mechanism waiting for a specific response before sending next data
+    bool sending_guard;
+    struct k_timer sending_guard_timer;
 };
 
 /**
@@ -39,7 +43,25 @@ struct my_uart_conf
     const struct gpio_dt_spec gpio_spec; // GPIO spec for pin used to start transmitting.
 };
 
-size_t build_user_send_data(uint8_t *buf, size_t buf_size, const char *data, size_t length) {
+static bool check_sending_guard(const char *data, size_t length)
+{
+    if (length < 2) {return false;}
+    if (memcmp(data, "OK", 2) == 0) {return true;}
+    return false;
+}
+
+static void sending_guard_timer_expired_function(struct k_timer *timer_id)
+{
+    const struct device *dev = (const struct device *)k_timer_user_data_get(timer_id);
+    struct my_uart_conf *conf = (struct my_uart_conf *)dev->config;
+
+    // Release transmission guard
+    conf->data->sending_guard = false;
+    
+	uart_irq_tx_enable(conf->uart_dev);
+}
+
+static size_t build_user_send_data(uint8_t *buf, size_t buf_size, const char *data, size_t length) {
     // do something
     memcpy(buf+0, "SEND:", 5);
     memcpy(buf+5, data, length);
@@ -65,6 +87,7 @@ static void user_send_data(const struct device *dev, const char *data, size_t le
 
         // do somrthing
         size_t size = build_user_send_data((uint8_t *)buf, buf_size, data, length);
+
         uint8_t size32 = (size / sizeof(uint32_t)) + 1;
         value = size32 * sizeof(uint32_t) - size; // A variable that indicates how much less than the total size managed by the ring buffer of item mode // tell length for ring_buf_item_get
 
@@ -120,6 +143,11 @@ static void uart_int_handler(const struct device *uart_dev, void *user_data)
             size_t rx_buf_capacity = CONFIG_MY_UART_PERIPHERAL_B_RX_BUF_SIZE - data->rx_data_len;
             if ( (c == '\n') || (c == '\r') ) // terminate found.
             {
+                if (check_sending_guard(data->rx_buf, data->rx_data_len)){
+                    data->sending_guard = false;
+                	uart_irq_tx_enable(conf->uart_dev);
+                }
+                
                 if (callback != NULL)
                 {
                     callback(dev, data->rx_buf, data->rx_data_len);
@@ -136,25 +164,34 @@ static void uart_int_handler(const struct device *uart_dev, void *user_data)
         } // while
 
 		if (uart_irq_tx_ready(uart_dev)) {
-			uint32_t my_data[CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS];
-			uint16_t my_type;
-			uint8_t  my_value; // told length by ring_buf_item_put
-			uint8_t  my_size;
-			int ret;
-            my_size = CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS;
-            ret = ring_buf_item_get(&(data->tx_rb), &my_type, &my_value, my_data, &my_size);
-            if (ret == -EMSGSIZE) {
-                printk("Buffer is too small, need %d uint32_t\n", my_size);
-                uart_irq_tx_disable(uart_dev);
-            } else if (ret == -EAGAIN) {
-                printk("Ring buffer is empty\n");
+            if (data->sending_guard) {
+                LOG_DBG("My UART peripheral b, uart_int_handler, tx, sending_guard, hold sending data");
                 uart_irq_tx_disable(uart_dev);
             } else {
-                printk("Got item of type %u value %u of size %u dwords\n",
-                        my_type, my_value, my_size);
-                // my_size: A variable that indicates how much less than the total size managed by the ring buffer of item mode
-                size_t size = my_size * sizeof(uint32_t) - my_value; // size indicates data length in the item
-                uart_fifo_fill(uart_dev, (uint8_t *)my_data, size);
+                uint32_t my_data[CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS];
+                uint16_t my_type;
+                uint8_t  my_value; // told length by ring_buf_item_put
+                uint8_t  my_size;
+                int ret;
+                my_size = CONFIG_MY_UART_PERIPHERAL_B_TX_BUF_WORDS;
+                ret = ring_buf_item_get(&(data->tx_rb), &my_type, &my_value, my_data, &my_size);
+                if (ret == -EMSGSIZE) {
+                    printk("Buffer is too small, need %d uint32_t\n", my_size);
+                    uart_irq_tx_disable(uart_dev);
+                } else if (ret == -EAGAIN) {
+                    printk("Ring buffer is empty\n");
+                    uart_irq_tx_disable(uart_dev);
+                } else {
+                    printk("Got item of type %u value %u of size %u dwords\n",
+                            my_type, my_value, my_size);
+                    // my_size: A variable that indicates how much less than the total size managed by the ring buffer of item mode
+                    size_t size = my_size * sizeof(uint32_t) - my_value; // size indicates data length in the item
+                    uart_fifo_fill(uart_dev, (uint8_t *)my_data, size);
+
+                    data->sending_guard = true;
+                    /* start one shot timer that expires after 5000 ms */
+                    k_timer_start(&(data->sending_guard_timer), K_MSEC(5000), K_NO_WAIT);
+                }
             }
 		}
 	} // while
@@ -220,6 +257,8 @@ static int init_my_uart_peripheral_b(const struct device *dev)
         return -ENODEV;
     }
     ring_buf_item_init(&(conf->data->tx_rb), CONFIG_MY_UART_PERIPHERAL_B_TX_BUFFERING_BUF_WORDS, conf->data->tx_rb_buffer);
+    k_timer_init(&(conf->data->sending_guard_timer), sending_guard_timer_expired_function, NULL);
+    k_timer_user_data_set(&(conf->data->sending_guard_timer), (void *)dev); // Associate user-specific data with a timer to reference "dev" in the timer handler.
     LOG_DBG("My UART peripheral b initialized");
     return 0;
 }
@@ -229,6 +268,7 @@ static int init_my_uart_peripheral_b(const struct device *dev)
         .callback = NULL,                                         \
         .rx_data_len = 0,                                         \
         .rx_buf = {0},                                            \
+        .sending_guard = false,                                   \
     };                                                            \
     static struct my_uart_conf my_uart_peripheral_b_conf_##inst = { \
         .data = &my_uart_peripheral_b_data_##inst,                \
