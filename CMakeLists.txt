@@ -15,6 +15,11 @@ src/main_my_uart_peripheral_b.c
 src/main_cdc_acm.c
 src/main_shell_module.c
 src/main_mcp9808.c
-src/main_dhcpv4_client.c
+# src/main_dhcpv4_client.c
+src/socket_dumb_http.c
 )
+
+generate_inc_file_for_target(app src/response_small.html.bin src/response_small.html.bin.inc)
+generate_inc_file_for_target(app src/response_big.html.bin   src/response_big.html.bin.inc)
+
 add_subdirectory(drivers)

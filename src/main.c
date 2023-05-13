@@ -22,6 +22,7 @@ extern void main_shell_module(void);
 extern void main_mcp9808(void);
 extern void main_app(void);
 extern void main_dhcpv4_client(void);
+extern void main_socket_dumb_http(void);
 
 void main(void)
 {
@@ -33,7 +34,8 @@ void main(void)
 	main_my_uart_peripheral_b();
 	main_mcp9808();
 	main_app();
-	main_dhcpv4_client();
+	// main_dhcpv4_client();
+	main_socket_dumb_http();
 
 	k_work_queue_init(&my_work_q);
 	k_work_queue_start(&my_work_q, my_stack_area,
