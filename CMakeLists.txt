@@ -17,9 +17,17 @@ src/main_shell_module.c
 src/main_mcp9808.c
 src/main_dhcpv4_client.c
 src/socket_dumb_http.c
+src/http_get.c
 )
 
 generate_inc_file_for_target(app src/response_small.html.bin src/response_small.html.bin.inc)
 generate_inc_file_for_target(app src/response_big.html.bin   src/response_big.html.bin.inc)
+
+set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
+generate_inc_file_for_target(
+    app
+    src/globalsign_r1.der
+    ${gen_dir}/globalsign_r1.der.inc
+    )
 
 add_subdirectory(drivers)
