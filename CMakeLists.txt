@@ -15,7 +15,7 @@ src/main_my_uart_peripheral_b.c
 src/main_cdc_acm.c
 src/main_shell_module.c
 src/main_mcp9808.c
-# src/main_dhcpv4_client.c
+src/main_dhcpv4_client.c
 src/socket_dumb_http.c
 )
 
