@@ -70,4 +70,8 @@ void main_dhcpv4_client(void)
 	iface = net_if_get_default();
 
 	net_dhcpv4_start(iface);
+
+	/* notice for test environment */
+	/* DHCP server MUST return Option: (3) Router*/
+	/* Net interface doesn't seem to be automatically configured from other information */
 }
